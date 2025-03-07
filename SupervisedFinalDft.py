@@ -113,5 +113,4 @@ y_pred = svm_classifier.predict(X_test)
 # Step 5: Evaluate the performance of the classifier
 accuracy = accuracy_score(y_test, y_pred)
 print("Accuracy:", accuracy)
-
 confusion_matrix(y_test, y_pred)
