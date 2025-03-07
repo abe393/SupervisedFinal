@@ -1,45 +1,45 @@
-import pandas as pd 
+import pandas as pd
 import os
 import scipy.io
-#import wfdb
+# import wfdb
 import numpy as np
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
 from scipy import signal
-#create a list of every file in Data that ends in mat 
-fileList =[]
-headerList =[]
-basePath="./Data"
+# create a list of every file in Data that ends in mat
+fileList = []
+headerList = []
+basePath = "./Data"
 for path in os.listdir(basePath):
     if ".mat" in path:
         fileList.append(path)
     if ".hea" in path:
         headerList.append(path)
 
-#lets take a look at one piece of data in this set looks like 
+# lets take a look at one piece of data in this set looks like
 for file in fileList:
     matFile = scipy.io.loadmat(f'{basePath}/{file}')
     break
 
 diagnosisCount = {}
-#i want to make a count of each Dx
+# i want to make a count of each Dx
 for header in headerList:
     hea_file_path = f"{basePath}/{header}"
-    with open(hea_file_path,"r") as file:
+    with open(hea_file_path, "r") as file:
         for line in file:
             if line.startswith("#Dx"):
                 diag = line.split(":")[1].strip()
                 diagList = diag.split(",")
                 for diagnosis in diagList:
                     if diagnosis not in diagnosisCount.keys():
-                        diagnosisCount[diagnosis] =1
+                        diagnosisCount[diagnosis] = 1
                     else:
-                        diagnosisCount[diagnosis] +=1
+                        diagnosisCount[diagnosis] += 1
 
-relevant =[]
+relevant = []
 for key in diagnosisCount.keys():
-    if diagnosisCount[key] >750:
+    if diagnosisCount[key] > 750:
         relevant.append(key)
 
 diagnosticLookup = {
@@ -59,11 +59,11 @@ diagnosticLookup = {
     '270492004': 'Hypertensive heart disease'
 }
 
-relevantDataFiles =[]
+relevantDataFiles = []
 DataFileDiagnosis = []
 for header in headerList:
     hea_file_path = f"{basePath}/{header}"
-    with open(hea_file_path,"r") as file:
+    with open(hea_file_path, "r") as file:
         Matfile = None
         for line in file:
             if line.startswith("E") and Matfile == None:
@@ -75,29 +75,30 @@ for header in headerList:
                     if diagnosis in diagnosticLookup.keys():
                         relevantDataFiles.append(Matfile)
                         DataFileDiagnosis.append(diagnosticLookup[diagnosis])
-                        break    
+                        break
                     else:
-                        diagnosisCount[diagnosis] +=1
+                        diagnosisCount[diagnosis] += 1
 
 
-#Now we have a list of files and there diagnosis
+# Now we have a list of files and there diagnosis
 
-#DataFile Diagnosis is effectivley or Y 
-#or should we go the route of putting this all in a DF and using Split functions from Sklear to match what is
+# DataFile Diagnosis is effectivley or Y
+# or should we go the route of putting this all in a DF and using Split functions from Sklear to match what is
 
-X=[] 
-max_length =5000
+X = []
+max_length = 5000
 for file in relevantDataFiles:
     matFile = scipy.io.loadmat(f'{basePath}/{file}')
-    tempData=(matFile['val'][:,0])
+    tempData = (matFile['val'][:, 0])
     dftData = np.fft.rfft(tempData)
     X.append(np.real(dftData))
     print(len(dftData))
-#convert them into np.arrays
+# convert them into np.arrays
 X = np.array(X)
-y= np.array(DataFileDiagnosis)
+y = np.array(DataFileDiagnosis)
 # Step 1: Split the data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42)
 
 print("training classifer")
 # Step 2: Initialize the SVM classifier
@@ -113,3 +114,4 @@ y_pred = svm_classifier.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
 print("Accuracy:", accuracy)
 
+confusion_matrix(y_test, y_pred)
